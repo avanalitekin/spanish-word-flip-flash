@@ -10,6 +10,8 @@ pipeline {
             agent {
                 docker {
                     image 'node:22-alpine'
+                    // On Windows, forcing a Unix-style root working directory bypasses the absolute path error
+                    args '-w /workspace'
                 }
             }
             steps {
@@ -25,7 +27,7 @@ pipeline {
                         docker {
                             image 'node:22-alpine'
                             reuseNode true
-                            customWorkspace '/Users/52265562/.jenkins/workspace/spanish-word-flip-flash'
+                            args '-w /workspace'
                         }
                     }
                     steps {
@@ -40,6 +42,7 @@ pipeline {
             agent {
                 docker {
                     image 'alpine'
+                    args '-w /workspace'
                 }
             }
             steps {
