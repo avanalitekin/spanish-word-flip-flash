@@ -1,38 +1,31 @@
 pipeline {
     agent any
     
-    // This tells the Docker plugin exactly how to translate paths globally
-    environment {
-        WORKSPACE = '/workspace'
-    }
-    
     options {
         ansiColor('xterm')
     }
 
     stages {
         stage('build') {
-            agent {
-                docker {
-                    image 'node:22-alpine'
-                }
-            }
             steps {
-                sh 'npm ci'
-                sh 'npm run build'
+                script {
+                    // Strips the "C:" and switches to forward slashes dynamically
+                    def linuxPath = pwd().replace('\\', '/').replaceAll('^[a-zA-Z]:', '')
+                    
+                    docker.image('node:22-alpine').inside("-v ${linuxPath}:${linuxPath} -w ${linuxPath}") {
+                        sh 'npm ci'
+                        sh 'npm run build'
+                    }
+                }
             }
         }
 
         stage('test') {
-            parallel {
-                stage('unit tests') {
-                    agent {
-                        docker {
-                            image 'node:22-alpine'
-                            reuseNode true
-                        }
-                    }
-                    steps {
+            steps {
+                script {
+                    def linuxPath = pwd().replace('\\', '/').replaceAll('^[a-zA-Z]:', '')
+                    
+                    docker.image('node:22-alpine').inside("-v ${linuxPath}:${linuxPath} -w ${linuxPath}") {
                         sh 'npx vitest run --reporter=verbose'
                     }
                 }
@@ -40,11 +33,6 @@ pipeline {
         }
 
         stage('deploy') {
-            agent {
-                docker {
-                    image 'alpine'
-                }
-            }
             steps {
                 echo 'Mock deployment was successful!'
             }
