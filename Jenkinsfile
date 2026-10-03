@@ -7,40 +7,35 @@ pipeline {
 
     stages {
         stage('build') {
-            agent {
-                docker {
-                    image 'node:22-alpine'
-                }
-            }
             steps {
-                sh 'npm ci'
-                sh 'npm run build'
+                script {
+                    // 1. Transform Windows path (C:\Users\...) to a Docker-friendly Linux format (/Users/...)
+                    def dockerVolPath = pwd().replace('\\', '/').replaceAll('^[a-zA-Z]:', '')
+                    
+                    echo "Mounting volume: /c${dockerVolPath}"
+                    
+                    // 2. Run the container manually with a true Linux absolute working directory (-w /app)
+                    bat "docker run --rm -v /c${dockerVolPath}:/app -w /app node:22-alpine sh -c \"npm ci && npm run build\""
+                }
             }
         }
 
         stage('test') {
             parallel {
                 stage('unit tests') {
-                    agent {
-                        docker {
-                            image 'node:22-alpine'
-                            reuseNode true
-                        }
-                    }
                     steps {
-                        // Unit tests with Vitest
-                        sh 'npx vitest run --reporter=verbose'
+                        script {
+                            def dockerVolPath = pwd().replace('\\', '/').replaceAll('^[a-zA-Z]:', '')
+                            
+                            // Runs vitest inside the container
+                            bat "docker run --rm -v /c${dockerVolPath}:/app -w /app node:22-alpine sh -c \"npx vitest run --reporter=verbose\""
+                        }
                     }
                 }
             }
         }
 
         stage('deploy') {
-            agent {
-                docker {
-                    image 'alpine'
-                }
-            }
             steps {
                 // Mock deployment which does nothing
                 echo 'Mock deployment was successful!'
