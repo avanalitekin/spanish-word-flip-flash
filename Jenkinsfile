@@ -8,14 +8,12 @@ pipeline {
     stages {
         stage('build') {
             steps {
+                // Dynamically strip the 'C:' and format the workspace for Docker Desktop
                 script {
-                    // Strips the "C:" and switches to forward slashes dynamically
                     def linuxPath = pwd().replace('\\', '/').replaceAll('^[a-zA-Z]:', '')
                     
-                    docker.image('node:22-alpine').inside("-v ${linuxPath}:${linuxPath} -w ${linuxPath}") {
-                        sh 'npm ci'
-                        sh 'npm run build'
-                    }
+                    // We call raw 'bat' to execute the container manually 
+                    bat "docker run --rm -v /c${linuxPath}:/app -w /app node:22-alpine sh -c \"npm ci && npm run build\""
                 }
             }
         }
@@ -25,9 +23,7 @@ pipeline {
                 script {
                     def linuxPath = pwd().replace('\\', '/').replaceAll('^[a-zA-Z]:', '')
                     
-                    docker.image('node:22-alpine').inside("-v ${linuxPath}:${linuxPath} -w ${linuxPath}") {
-                        sh 'npx vitest run --reporter=verbose'
-                    }
+                    bat "docker run --rm -v /c${linuxPath}:/app -w /app node:22-alpine sh -c \"npx vitest run --reporter=verbose\""
                 }
             }
         }
