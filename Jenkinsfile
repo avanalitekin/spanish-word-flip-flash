@@ -25,6 +25,7 @@ pipeline {
                         docker {
                             image 'node:22-alpine'
                             reuseNode true
+                            customWorkspace '/Users/52265562/.jenkins/workspace/spanish-word-flip-flash'
                         }
                     }
                     steps {
