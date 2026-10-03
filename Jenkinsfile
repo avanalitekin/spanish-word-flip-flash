@@ -7,29 +7,42 @@ pipeline {
 
     stages {
         stage('build') {
-            steps {
-                // Dynamically strip the 'C:' and format the workspace for Docker Desktop
-                script {
-                    def linuxPath = pwd().replace('\\', '/').replaceAll('^[a-zA-Z]:', '')
-                    
-                    // We call raw 'bat' to execute the container manually 
-                    bat "docker run --rm -v /c${linuxPath}:/app -w /app node:22-alpine sh -c \"npm ci && npm run build\""
+            agent {
+                docker {
+                    image 'node:22-alpine'
                 }
+            }
+            steps {
+                sh 'npm ci'
+                sh 'npm run build'
             }
         }
 
         stage('test') {
-            steps {
-                script {
-                    def linuxPath = pwd().replace('\\', '/').replaceAll('^[a-zA-Z]:', '')
-                    
-                    bat "docker run --rm -v /c${linuxPath}:/app -w /app node:22-alpine sh -c \"npx vitest run --reporter=verbose\""
+            parallel {
+                stage('unit tests') {
+                    agent {
+                        docker {
+                            image 'node:22-alpine'
+                            reuseNode true
+                        }
+                    }
+                    steps {
+                        // Unit tests with Vitest
+                        sh 'npx vitest run --reporter=verbose'
+                    }
                 }
             }
         }
 
         stage('deploy') {
+            agent {
+                docker {
+                    image 'alpine'
+                }
+            }
             steps {
+                // Mock deployment which does nothing
                 echo 'Mock deployment was successful!'
             }
         }
