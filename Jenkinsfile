@@ -11,9 +11,8 @@ pipeline {
                 script {
                     def dockerVolPath = pwd().replace('\\', '/').replaceAll('^[a-zA-Z]:', '')
                     
-                    // Notice the extra: -v /app/node_modules
-                    // This isolates the slow npm operations inside Linux's local cache
-                    bat "docker run --rm -v /c${dockerVolPath}:/app -v /app/node_modules -w /app node:22-alpine sh -c \"npm ci && npm run build\""
+                    // Changed to a named volume: -v spanish-word-flip-modules:/app/node_modules
+                    bat "docker run --rm -v /c${dockerVolPath}:/app -v spanish-word-flip-modules:/app/node_modules -w /app node:22-alpine sh -c \"npm ci && npm run build\""
                 }
             }
         }
@@ -25,8 +24,8 @@ pipeline {
                         script {
                             def dockerVolPath = pwd().replace('\\', '/').replaceAll('^[a-zA-Z]:', '')
                             
-                            // Re-apply the volume exception here as well so tests are fast
-                            bat "docker run --rm -v /c${dockerVolPath}:/app -v /app/node_modules -w /app node:22-alpine sh -c \"npx vitest run --reporter=verbose\""
+                            // Re-using the exact same named volume here grants this container access to the dependencies
+                            bat "docker run --rm -v /c${dockerVolPath}:/app -v spanish-word-flip-modules:/app/node_modules -w /app node:22-alpine sh -c \"npx vitest run --reporter=verbose\""
                         }
                     }
                 }
